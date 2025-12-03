@@ -1,0 +1,76 @@
+# Lumen Project Configuration
+# Copy this file to application.conf and customize for your environment
+
+app {
+    name = "Lumen"
+    version = "0.1.0-SNAPSHOT"
+}
+
+database {
+    # SQLite configuration
+    sqlite {
+        path = "data/lumen.db"
+    }
+
+    # PostgreSQL configuration (optional, for team collaboration)
+    postgres {
+        host = "localhost"
+        port = 5432
+        database = "lumen"
+        username = "lumen_user"
+        password = "change_me"
+        maxPoolSize = 10
+    }
+}
+
+api {
+    # OpenAlex configuration
+    openalex {
+        baseUrl = "https://api.openalex.org"
+        email = "your-email@example.com"  # Polite pool
+    }
+
+    # Crossref configuration
+    crossref {
+        baseUrl = "https://api.crossref.org"
+        email = "your-email@example.com"
+    }
+
+    # Semantic Scholar configuration
+    semanticScholar {
+        baseUrl = "https://api.semanticscholar.org"
+        apiKey = ""  # Optional but recommended
+    }
+
+    # arXiv configuration
+    arxiv {
+        baseUrl = "http://export.arxiv.org/api"
+    }
+}
+
+llm {
+    # OpenAI configuration
+    openai {
+        apiKey = ""  # Add your OpenAI API key
+        model = "gpt-4"
+        maxTokens = 2000
+    }
+
+    # Anthropic configuration
+    anthropic {
+        apiKey = ""  # Add your Anthropic API key
+        model = "claude-3-opus-20240229"
+        maxTokens = 2000
+    }
+}
+
+logging {
+    level = "INFO"
+    file = "logs/lumen.log"
+}
+
+export {
+    outputDirectory = "exports"
+    formats = ["csv", "bibtex", "ris", "json"]
+}
+

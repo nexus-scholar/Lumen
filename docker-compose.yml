@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lumen-postgres
+    environment:
+      POSTGRES_DB: lumen
+      POSTGRES_USER: lumen_user
+      POSTGRES_PASSWORD: lumen_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lumen_user -d lumen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  lumen-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumen-web
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: lumen
+      DATABASE_USER: lumen_user
+      DATABASE_PASSWORD: lumen_password
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./exports:/app/exports
+
+volumes:
+  postgres_data:
+

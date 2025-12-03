@@ -1,0 +1,26 @@
+#!/bin/bash
+# Pre-commit hook to run code quality checks
+
+echo "Running pre-commit checks..."
+
+# Run detekt
+echo "🔍 Running Detekt..."
+./gradlew detekt --daemon
+
+if [ $? -ne 0 ]; then
+    echo "❌ Detekt found issues. Please fix them before committing."
+    exit 1
+fi
+
+# Run tests
+echo "🧪 Running tests..."
+./gradlew test --daemon
+
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Please fix them before committing."
+    exit 1
+fi
+
+echo "✅ All checks passed!"
+exit 0
+

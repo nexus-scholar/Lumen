@@ -1,0 +1,45 @@
+build/
+.gradle/
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+*.log
+
+# Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local configuration
+local.properties
+secrets.properties
+
+# Data files
+data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Reports
+reports/
+build/reports/
+
+# Node modules (for JS)
+node_modules/
+
+# Kotlin/JS
+kotlin-js-store/
+
