@@ -133,6 +133,12 @@ val jvmModule = module {
         )
     }
     factory {
+        ResearchQuestionsStage(
+            llmService = get(),
+            artifactStore = get()
+        )
+    }
+    factory {
         ConceptExpansionStage(
             llmService = get(),
             artifactStore = get()
