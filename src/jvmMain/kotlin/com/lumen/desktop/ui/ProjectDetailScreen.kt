@@ -115,9 +115,10 @@ fun ProjectDetailScreen(
     var project by remember { mutableStateOf<Project?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var reloadTrigger by remember { mutableStateOf(0) }
 
     // Load project
-    LaunchedEffect(projectId) {
+    LaunchedEffect(projectId, reloadTrigger) {
         try {
             project = loadProject(projectId)
             isLoading = false
@@ -186,14 +187,22 @@ fun ProjectDetailScreen(
             }
 
             project != null -> {
-                ProjectContent(project!!, projectId)
+                ProjectContent(
+                    project = project!!,
+                    projectId = projectId,
+                    onProjectUpdate = { reloadTrigger++ }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProjectContent(project: Project, projectId: String) {
+private fun ProjectContent(
+    project: Project,
+    projectId: String,
+    onProjectUpdate: () -> Unit
+) {
     // Load PICO if it exists
     var pico by remember { mutableStateOf<ProblemFraming?>(null) }
 
@@ -302,7 +311,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Extract Population, Intervention, Comparison, Outcome",
             projectId = projectId,
             stageType = StageType.PICO,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -310,7 +320,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Generate primary and secondary research questions",
             projectId = projectId,
             stageType = StageType.RESEARCH_QUESTIONS,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -318,7 +329,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Generate synonyms and related terms",
             projectId = projectId,
             stageType = StageType.CONCEPT,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -326,7 +338,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Create Boolean search queries",
             projectId = projectId,
             stageType = StageType.QUERY,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -334,7 +347,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Test queries and refine if needed",
             projectId = projectId,
             stageType = StageType.TEST,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -342,7 +356,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Execute full search across databases",
             projectId = projectId,
             stageType = StageType.SEARCH,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
 
         StageCard(
@@ -350,7 +365,8 @@ private fun ProjectContent(project: Project, projectId: String) {
             description = "Remove duplicate documents",
             projectId = projectId,
             stageType = StageType.DEDUP,
-            currentStatus = project.status
+            currentStatus = project.status,
+            onProjectUpdate = onProjectUpdate
         )
     }
 }
@@ -383,7 +399,8 @@ private fun StageCard(
     description: String,
     projectId: String,
     stageType: StageType,
-    currentStatus: ProjectStatus
+    currentStatus: ProjectStatus,
+    onProjectUpdate: () -> Unit = {}
 ) {
     var isRunning by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
@@ -393,7 +410,7 @@ private fun StageCard(
     // Check if stage is already completed
     val isEnabled = when (stageType) {
         StageType.PICO -> true
-        StageType.RESEARCH_QUESTIONS -> currentStatus >= ProjectStatus.PICO_EXTRACTION
+        StageType.RESEARCH_QUESTIONS -> true
         StageType.CONCEPT -> currentStatus >= ProjectStatus.RESEARCH_QUESTIONS
         StageType.QUERY -> currentStatus >= ProjectStatus.CONCEPT_EXPANSION
         StageType.TEST -> currentStatus >= ProjectStatus.QUERY_GENERATION
@@ -497,6 +514,8 @@ private fun StageCard(
                                     approvePico(projectId)
                                     showApprovalDialog = false
                                     result = "✅ PICO approved!"
+                                    // Trigger project reload to update status and enable Stage 2
+                                    onProjectUpdate()
                                 }
                             )
                         }
@@ -726,13 +745,26 @@ private fun loadProject(projectId: String): Project? {
 private fun approvePico(projectId: String) {
     try {
         val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
-        val file = File("data/$projectId/artifacts/ProblemFraming.json")
 
-        if (file.exists()) {
-            val pico = json.decodeFromString<ProblemFraming>(file.readText())
+        // 1. Approve the PICO artifact
+        val picoFile = File("data/$projectId/artifacts/ProblemFraming.json")
+        if (picoFile.exists()) {
+            val pico = json.decodeFromString<ProblemFraming>(picoFile.readText())
             val approved = pico.copy(approved = true)
-            file.writeText(json.encodeToString(ProblemFraming.serializer(), approved))
+            picoFile.writeText(json.encodeToString(ProblemFraming.serializer(), approved))
             println("✅ PICO approved for project $projectId")
+        }
+
+        // 2. Update project status to enable Stage 2 (Research Questions)
+        val projectFile = File("data/$projectId/artifacts/Project.json")
+        if (projectFile.exists()) {
+            val project = json.decodeFromString<Project>(projectFile.readText())
+            val updatedProject = project.copy(
+                status = ProjectStatus.RESEARCH_QUESTIONS,
+                updatedAt = kotlinx.datetime.Clock.System.now()
+            )
+            projectFile.writeText(json.encodeToString(Project.serializer(), updatedProject))
+            println("✅ Project status updated to RESEARCH_QUESTIONS")
         }
     } catch (e: Exception) {
         println("❌ Failed to approve PICO: ${e.message}")

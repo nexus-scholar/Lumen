@@ -95,7 +95,7 @@ data class OpenAiConfig(
 data class OpenRouterConfig(
     val apiKey: String = "",
     val baseUrl: String = "https://openrouter.ai/api/v1",
-    val model: String = "openai/gpt-3.5-turbo", // Cheaper model
+    val model: String = "openai/gpt-oss-20b:free", // Cheaper model
     val maxTokens: Int = 2000
 )
 
