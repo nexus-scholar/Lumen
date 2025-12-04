@@ -751,3 +751,22 @@ private inline fun <reified T> loadArtifact(projectId: String, filename: String)
         }
     } else null
 }
+
+private inline fun <reified T> saveArtifact(projectId: String, artifact: T, filename: String) {
+    try {
+        val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
+        val artifactsDir = File("data/$projectId/artifacts")
+        artifactsDir.mkdirs()
+        val file = File(artifactsDir, filename)
+
+        // Use kotlinx.serialization's serializer() to get the serializer for T
+        val serializedJson = json.encodeToString(kotlinx.serialization.serializer<T>(), artifact)
+        file.writeText(serializedJson)
+
+        println("✅ Saved $filename for project $projectId")
+    } catch (e: Exception) {
+        println("❌ Failed to save $filename: ${e.message}")
+        e.printStackTrace()
+    }
+}
+
