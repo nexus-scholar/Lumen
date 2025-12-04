@@ -128,13 +128,8 @@ IMPORTANT:
                 )
             }
 
-            // Save artifact
-            artifactStore.save(
-                projectId = getProjectId(input),
-                artifact = questions,
-                serializer = ResearchQuestions.serializer(),
-                filename = "ResearchQuestions.json"
-            )
+            // Note: Artifact storage will be handled by the UI layer since we don't have project ID
+            // TODO: Refactor to include projectId in ProblemFraming input
 
             logger.info { "Research questions generated successfully with ${validation.warnings.size} warnings" }
 
@@ -148,17 +143,8 @@ IMPORTANT:
         } catch (e: Exception) {
             logger.error(e) { "Research questions generation failed" }
 
-            // Save error for debugging
-            artifactStore.saveError(
-                projectId = getProjectId(input),
-                stageName = stageName,
-                error = PipelineError.LlmCallFailed(e.message ?: "Unknown error", e),
-                context = mapOf(
-                    "population" to input.population,
-                    "intervention" to input.intervention,
-                    "outcome" to input.outcome
-                )
-            )
+            // Note: Error storage skipped - no project ID available
+            // TODO: Refactor to include projectId in ProblemFraming input
 
             StageResult.Failure(
                 PipelineError.LlmCallFailed(
@@ -255,12 +241,13 @@ IMPORTANT:
 
     /**
      * Extract project ID from PICO (temporary until ProblemFraming includes it)
+     * For now, we'll use a placeholder that the UI will override
      */
-    private fun getProjectId(pico: ProblemFraming): String {
+    private fun getProjectId(@Suppress("UNUSED_PARAMETER") pico: ProblemFraming): String {
         // TODO: ProblemFraming should include projectId
-        // For now, we need to get it from the calling context
-        // This is a known limitation from the status report
-        return "unknown_project"
+        // The UI passes the project ID directly when calling the stage
+        // This is a known workaround - see STAGE-02-RESEARCH-QUESTIONS-REPORT.md
+        return "temp_project"
     }
 }
 

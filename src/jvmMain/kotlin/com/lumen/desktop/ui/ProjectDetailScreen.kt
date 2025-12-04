@@ -501,6 +501,34 @@ private fun StageCard(
                             )
                         }
                     }
+
+                    // Show "View/Approve" button for Research Questions if results exist
+                    if (stageType == StageType.RESEARCH_QUESTIONS && result?.contains("Questions generated") == true) {
+                        var showQuestionsDialog by remember { mutableStateOf(false) }
+
+                        OutlinedButton(
+                            onClick = { showQuestionsDialog = true }
+                        ) {
+                            Text("View & Approve")
+                        }
+
+                        if (showQuestionsDialog) {
+                            // Load questions from file
+                            val questions = loadArtifact<ResearchQuestions>(projectId, "ResearchQuestions.json")
+                            if (questions != null) {
+                                QuestionsApprovalDialog(
+                                    projectId = projectId,
+                                    questions = questions,
+                                    onDismiss = { showQuestionsDialog = false },
+                                    onApprove = {
+                                        showQuestionsDialog = false
+                                        result = "✅ Research questions approved!"
+                                        isCompleted = true
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -563,10 +591,14 @@ private suspend fun runStage(projectId: String, stageType: StageType): String? {
                 when (val result = stage.execute(pico)) {
                     is StageResult.Success -> {
                         println("✅ DEBUG: Research questions generated")
+                        // Save artifact
+                        saveArtifact(projectId, result.data, "ResearchQuestions.json")
                         "✅ Research questions generated successfully"
                     }
                     is StageResult.RequiresApproval -> {
                         println("⚠️ DEBUG: Questions require approval")
+                        // Save artifact
+                        saveArtifact(projectId, result.data, "ResearchQuestions.json")
                         buildString {
                             appendLine("✅ Questions generated - Review required")
                             appendLine()
