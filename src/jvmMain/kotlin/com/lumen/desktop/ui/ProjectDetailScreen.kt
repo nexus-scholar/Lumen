@@ -39,6 +39,17 @@ private object StageKoinHelper : KoinComponent {
         }
     }
 
+    fun getQuestionsStage(): ResearchQuestionsStage {
+        println("🔍 DEBUG: Getting ResearchQuestionsStage from Koin...")
+        return try {
+            get<ResearchQuestionsStage>()
+        } catch (e: Exception) {
+            println("❌ DEBUG: Failed to get ResearchQuestionsStage: ${e.message}")
+            e.printStackTrace()
+            throw e
+        }
+    }
+
     fun getConceptStage(): ConceptExpansionStage {
         println("🔍 DEBUG: Getting ConceptExpansionStage from Koin...")
         return try {
@@ -295,6 +306,14 @@ private fun ProjectContent(project: Project, projectId: String) {
         )
 
         StageCard(
+            name = "2. Research Questions",
+            description = "Generate primary and secondary research questions",
+            projectId = projectId,
+            stageType = StageType.RESEARCH_QUESTIONS,
+            currentStatus = project.status
+        )
+
+        StageCard(
             name = "3. Concept Expansion",
             description = "Generate synonyms and related terms",
             projectId = projectId,
@@ -355,7 +374,7 @@ private fun InfoRow(label: String, value: String) {
 }
 
 enum class StageType {
-    PICO, CONCEPT, QUERY, TEST, SEARCH, DEDUP
+    PICO, RESEARCH_QUESTIONS, CONCEPT, QUERY, TEST, SEARCH, DEDUP
 }
 
 @Composable
@@ -374,7 +393,8 @@ private fun StageCard(
     // Check if stage is already completed
     val isEnabled = when (stageType) {
         StageType.PICO -> true
-        StageType.CONCEPT -> currentStatus >= ProjectStatus.PICO_EXTRACTION
+        StageType.RESEARCH_QUESTIONS -> currentStatus >= ProjectStatus.PICO_EXTRACTION
+        StageType.CONCEPT -> currentStatus >= ProjectStatus.RESEARCH_QUESTIONS
         StageType.QUERY -> currentStatus >= ProjectStatus.CONCEPT_EXPANSION
         StageType.TEST -> currentStatus >= ProjectStatus.QUERY_GENERATION
         StageType.SEARCH -> currentStatus >= ProjectStatus.TEST_REFINE
@@ -517,6 +537,55 @@ private suspend fun runStage(projectId: String, stageType: StageType): String? {
                     }
                     is StageResult.Failure -> {
                         println("❌ DEBUG: PICO failed: ${result.error.message}")
+                        "❌ Failed: ${result.error.message}"
+                    }
+                }
+            }
+            StageType.RESEARCH_QUESTIONS -> {
+                println("🔍 DEBUG: Loading PICO for research questions generation...")
+                val pico = loadArtifact<ProblemFraming>(projectId, "ProblemFraming.json")
+                if (pico == null) {
+                    println("❌ DEBUG: PICO not found!")
+                    return "❌ PICO not found. Please complete Stage 1 first."
+                }
+
+                if (!pico.approved) {
+                    println("❌ DEBUG: PICO not approved!")
+                    return "❌ PICO must be approved before generating questions."
+                }
+                println("✅ DEBUG: PICO loaded and approved")
+
+                println("🔍 DEBUG: Getting ResearchQuestionsStage from Koin...")
+                val stage = StageKoinHelper.getQuestionsStage()
+                println("✅ DEBUG: Got ResearchQuestionsStage instance")
+
+                println("🔍 DEBUG: Executing research questions generation...")
+                when (val result = stage.execute(pico)) {
+                    is StageResult.Success -> {
+                        println("✅ DEBUG: Research questions generated")
+                        "✅ Research questions generated successfully"
+                    }
+                    is StageResult.RequiresApproval -> {
+                        println("⚠️ DEBUG: Questions require approval")
+                        buildString {
+                            appendLine("✅ Questions generated - Review required")
+                            appendLine()
+                            appendLine("Primary: ${result.data.primary.text}")
+                            appendLine()
+                            result.data.secondary.forEachIndexed { i, q ->
+                                appendLine("Secondary ${i+1}: ${q.text}")
+                            }
+                            if (result.suggestions.isNotEmpty()) {
+                                appendLine()
+                                appendLine("⚠️ Warnings:")
+                                result.suggestions.forEach {
+                                    appendLine("  • $it")
+                                }
+                            }
+                        }
+                    }
+                    is StageResult.Failure -> {
+                        println("❌ DEBUG: Research questions generation failed: ${result.error.message}")
                         "❌ Failed: ${result.error.message}"
                     }
                 }
