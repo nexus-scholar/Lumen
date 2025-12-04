@@ -502,8 +502,9 @@ private fun StageCard(
                         }
                     }
 
-                    // Show "View/Approve" button for Research Questions if results exist
-                    if (stageType == StageType.RESEARCH_QUESTIONS && result?.contains("Questions generated") == true) {
+                    // Show "View/Approve" button for Research Questions if results exist or LLM failed
+                    if (stageType == StageType.RESEARCH_QUESTIONS &&
+                        (result?.contains("Questions generated") == true || result?.contains("LLM failed") == true)) {
                         var showQuestionsDialog by remember { mutableStateOf(false) }
 
                         OutlinedButton(
@@ -618,7 +619,32 @@ private suspend fun runStage(projectId: String, stageType: StageType): String? {
                     }
                     is StageResult.Failure -> {
                         println("❌ DEBUG: Research questions generation failed: ${result.error.message}")
-                        "❌ Failed: ${result.error.message}"
+
+                        // If LLM failed, offer manual entry
+                        if (result.error.message.contains("API") || result.error.message.contains("LLM")) {
+                            // Create empty questions for manual entry
+                            val emptyQuestions = ResearchQuestions(
+                                primary = ResearchQuestion(
+                                    id = "primary_1",
+                                    text = "",
+                                    type = QuestionType.PRIMARY,
+                                    rationale = null,
+                                    picoMapping = PicoMapping(
+                                        population = pico.population,
+                                        intervention = pico.intervention,
+                                        comparison = pico.comparison,
+                                        outcome = pico.outcome
+                                    )
+                                ),
+                                secondary = emptyList(),
+                                approved = false,
+                                generatedAt = kotlinx.datetime.Clock.System.now()
+                            )
+                            saveArtifact(projectId, emptyQuestions, "ResearchQuestions.json")
+                            "❌ LLM failed: ${result.error.message}\n\nClick 'View & Approve' to enter questions manually"
+                        } else {
+                            "❌ Failed: ${result.error.message}"
+                        }
                     }
                 }
             }
