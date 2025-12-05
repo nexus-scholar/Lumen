@@ -111,6 +111,8 @@ kotlin {
                 implementation("org.junit.jupiter:junit-jupiter:$junitVersion")
                 implementation("io.mockk:mockk:$mockkVersion")
                 implementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+                implementation("io.kotest:kotest-assertions-core:$kotestVersion")
+                implementation("io.ktor:ktor-client-mock:$ktorVersion")
                 implementation("com.h2database:h2:2.2.224")
             }
         }

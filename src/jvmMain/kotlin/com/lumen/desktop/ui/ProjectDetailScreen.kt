@@ -411,7 +411,7 @@ private fun StageCard(
     val isEnabled = when (stageType) {
         StageType.PICO -> true
         StageType.RESEARCH_QUESTIONS -> true
-        StageType.CONCEPT -> currentStatus >= ProjectStatus.RESEARCH_QUESTIONS
+        StageType.CONCEPT -> true
         StageType.QUERY -> currentStatus >= ProjectStatus.CONCEPT_EXPANSION
         StageType.TEST -> currentStatus >= ProjectStatus.QUERY_GENERATION
         StageType.SEARCH -> currentStatus >= ProjectStatus.TEST_REFINE
