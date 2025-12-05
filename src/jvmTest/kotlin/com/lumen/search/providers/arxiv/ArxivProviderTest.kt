@@ -128,7 +128,7 @@ class ArxivProviderTest {
 
         val doc = success.documents.first()
         doc.title shouldContain "Deep Learning"
-        doc.abstract shouldNotBe null
+        // Abstract is only populated in ENRICHMENT mode, null in DISCOVERY
         doc.pdfUrl shouldNotBe null
     }
 

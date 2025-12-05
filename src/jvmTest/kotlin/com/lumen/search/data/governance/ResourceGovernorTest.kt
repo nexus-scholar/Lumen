@@ -234,7 +234,7 @@ class TokenBucketTest {
     @Test
     fun `tokens refill over time`() = runTest {
         val config = ProviderQuotaConfig(
-            requestsPerSecond = 100, // High rate for fast refill
+            requestsPerSecond = 100, // 100 tokens/sec = 10 tokens per 100ms
             burstCapacity = 2,
             dailyLimit = null
         )
@@ -244,14 +244,15 @@ class TokenBucketTest {
         bucket.acquire()
         bucket.acquire()
 
-        val statsBefore = bucket.getStats()
+        // Verify tokens are exhausted
+        bucket.hasTokens().shouldBeFalse()
 
         // Use real time delay for refill to work with Clock.System
         @Suppress("BlockingMethodInNonBlockingContext")
-        Thread.sleep(150) // Wait 150ms in real time
+        Thread.sleep(150) // Wait 150ms - should refill ~15 tokens at 100/sec
 
-        val statsAfter = bucket.getStats()
-        statsAfter.tokensAvailable shouldBeGreaterThan statsBefore.tokensAvailable
+        // hasTokens() triggers refill internally
+        bucket.hasTokens().shouldBeTrue()
     }
 
     @Test
