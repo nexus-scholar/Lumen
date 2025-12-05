@@ -80,7 +80,13 @@ class ResourceGovernorTest {
         governor.acquirePermit("test").shouldBeTrue()
         governor.acquirePermit("test").shouldBeTrue()
 
-        // Further requests should still succeed but may require waiting
+        // After exhausting burst, no tokens available until refill
+        governor.hasBudget("test").shouldBeFalse()
+
+        // Wait for refill (real time)
+        @Suppress("BlockingMethodInNonBlockingContext")
+        Thread.sleep(600) // Wait 600ms - should refill ~1 token at 2/sec
+
         governor.hasBudget("test").shouldBeTrue()
     }
 
@@ -240,8 +246,9 @@ class TokenBucketTest {
 
         val statsBefore = bucket.getStats()
 
-        // Wait for refill
-        delay(100.milliseconds)
+        // Use real time delay for refill to work with Clock.System
+        @Suppress("BlockingMethodInNonBlockingContext")
+        Thread.sleep(150) // Wait 150ms in real time
 
         val statsAfter = bucket.getStats()
         statsAfter.tokensAvailable shouldBeGreaterThan statsBefore.tokensAvailable

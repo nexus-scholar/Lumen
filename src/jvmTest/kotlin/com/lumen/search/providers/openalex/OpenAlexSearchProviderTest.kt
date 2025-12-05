@@ -227,7 +227,8 @@ class OpenAlexSearchProviderTest {
 
         explanation shouldNotBe null
         explanation.contains("OpenAlex").shouldBeTrue()
-        explanation.contains("machine learning").shouldBeTrue()
+        // Query is URL-encoded in the URL, so check for "machine" which won't be split
+        explanation.contains("machine").shouldBeTrue()
     }
 
     @Test
