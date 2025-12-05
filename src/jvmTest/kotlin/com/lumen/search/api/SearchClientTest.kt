@@ -1,12 +1,7 @@
 package com.lumen.search.api
 
 import com.lumen.search.data.engine.SearchOrchestrator
-import com.lumen.search.data.governance.ResourceGovernor
 import com.lumen.search.domain.models.*
-import com.lumen.search.domain.ports.ProviderCapability
-import com.lumen.search.domain.ports.ProviderResult
-import com.lumen.search.domain.ports.SearchProvider
-import com.lumen.search.domain.ports.SearchStatistics
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -15,8 +10,6 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -53,11 +46,14 @@ class SearchClientTest {
         val expectedDocs = listOf(createDoc("filtered"))
         every { orchestrator.executeSearch(any()) } returns flowOf(*expectedDocs.toTypedArray())
 
-        val results = searchClient.search(
-            query = "test",
+        val filters = SearchFilters(
             yearStart = 2020,
             yearEnd = 2024,
             openAccessOnly = true
+        )
+        val results = searchClient.search(
+            query = "test",
+            filters = filters
         ).toList()
 
         results.shouldNotBeEmpty()
@@ -90,9 +86,12 @@ class SearchClientTest {
     }
 
     @Test
-    fun `getUsageStats returns governor stats`() = runTest {
-        // Test that usage stats are accessible
-        // In real implementation, this would query ResourceGovernor
+    fun `enrich returns same document if already hydrated`() = runTest {
+        val doc = createDoc("doc1", isFullyHydrated = true)
+
+        val result = searchClient.enrich(doc)
+
+        result shouldBe doc
     }
 
     private fun createDoc(
@@ -116,100 +115,48 @@ class SearchClientTest {
 
 class ProbeClientTest {
 
+    private lateinit var orchestrator: SearchOrchestrator
+    private lateinit var probeClient: ProbeClient
+
+    @BeforeEach
+    fun setup() {
+        orchestrator = mockk()
+        probeClient = ProbeClient(orchestrator)
+    }
+
     @Test
-    fun `getSignalStrength returns valid range`() = runTest {
-        val fakeProvider = object : SearchProvider {
-            override val id = "test"
-            override val capabilities = setOf(ProviderCapability.TEXT_SEARCH, ProviderCapability.STATISTICS)
+    fun `getSignalStrength returns metrics`() = runTest {
+        val stats = com.lumen.search.data.engine.AggregatedStatistics(
+            totalEstimatedCount = 5000,
+            providerStats = emptyMap(),
+            allConcepts = listOf("Machine Learning", "Deep Learning")
+        )
+        coEvery { orchestrator.getAggregatedStats(any()) } returns stats
 
-            override fun search(intent: SearchIntent): Flow<ProviderResult> = flow { }
+        val result = probeClient.getSignalStrength("machine learning")
 
-            override suspend fun fetchDetails(id: String): ScholarlyDocument? = null
-
-            override suspend fun getStats(intent: SearchIntent): SearchStatistics {
-                return SearchStatistics(totalCount = 5000)
-            }
-
-            override fun debugQueryTranslation(intent: SearchIntent) = ""
-        }
-
-        val probeClient = ProbeClient(listOf(fakeProvider), ResourceGovernor())
-
-        val strength = probeClient.getSignalStrength("machine learning")
-
-        // Signal strength should be based on total count
-        strength shouldNotBe null
+        result shouldNotBe null
+        result.totalCount shouldBe 5000
     }
 
     @Test
     fun `getTrendLine returns year distribution`() = runTest {
-        val fakeProvider = object : SearchProvider {
-            override val id = "test"
-            override val capabilities = setOf(ProviderCapability.TEXT_SEARCH, ProviderCapability.STATISTICS)
-
-            override fun search(intent: SearchIntent): Flow<ProviderResult> = flow { }
-
-            override suspend fun fetchDetails(id: String): ScholarlyDocument? = null
-
-            override suspend fun getStats(intent: SearchIntent): SearchStatistics {
-                return SearchStatistics(
+        val stats = com.lumen.search.data.engine.AggregatedStatistics(
+            totalEstimatedCount = 1000,
+            providerStats = mapOf(
+                "test" to com.lumen.search.domain.ports.SearchStatistics(
                     totalCount = 1000,
-                    countByYear = mapOf(
-                        2024 to 300,
-                        2023 to 350,
-                        2022 to 200,
-                        2021 to 150
-                    )
+                    countByYear = mapOf(2024 to 300, 2023 to 350, 2022 to 200)
                 )
-            }
+            ),
+            allConcepts = emptyList()
+        )
+        coEvery { orchestrator.getAggregatedStats(any()) } returns stats
 
-            override fun debugQueryTranslation(intent: SearchIntent) = ""
-        }
+        val result = probeClient.getTrendLine("test query")
 
-        val probeClient = ProbeClient(listOf(fakeProvider), ResourceGovernor())
-
-        val trendLine = probeClient.getTrendLine("test query")
-
-        trendLine shouldNotBe null
-        trendLine?.isEmpty()?.shouldBeTrue() == false
-    }
-
-    @Test
-    fun `suggestRefinements returns suggestions for broad query`() = runTest {
-        val fakeProvider = object : SearchProvider {
-            override val id = "test"
-            override val capabilities = setOf(ProviderCapability.TEXT_SEARCH, ProviderCapability.STATISTICS)
-
-            override fun search(intent: SearchIntent): Flow<ProviderResult> = flow { }
-
-            override suspend fun fetchDetails(id: String): ScholarlyDocument? = null
-
-            override suspend fun getStats(intent: SearchIntent): SearchStatistics {
-                return SearchStatistics(
-                    totalCount = 100000,  // Very broad
-                    topConcepts = listOf("Machine Learning", "Deep Learning", "Neural Networks")
-                )
-            }
-
-            override fun debugQueryTranslation(intent: SearchIntent) = ""
-        }
-
-        val probeClient = ProbeClient(listOf(fakeProvider), ResourceGovernor())
-
-        val suggestions = probeClient.suggestRefinements("learning")
-
-        // Should suggest narrowing the query
-        suggestions shouldNotBe null
-    }
-
-    @Test
-    fun `handles empty provider list gracefully`() = runTest {
-        val probeClient = ProbeClient(emptyList(), ResourceGovernor())
-
-        val strength = probeClient.getSignalStrength("test")
-
-        // Should return null or 0 when no providers available
-        strength shouldBe null
+        result shouldNotBe null
+        result.isNotEmpty().shouldBeTrue()
     }
 }
 

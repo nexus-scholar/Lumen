@@ -2,11 +2,11 @@ package com.lumen.search.adapter
 
 import com.lumen.search.api.SearchClient
 import com.lumen.search.domain.models.ScholarlyDocument
+import com.lumen.search.domain.models.SearchFilters
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldHaveSize
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -28,7 +28,7 @@ class LegacySearchAdapterTest {
     @Test
     fun `search converts query to new format`() = runTest {
         val documents = listOf(createScholarlyDocument("doc1"))
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf(*documents.toTypedArray())
+        every { searchClient.search(any(), any(), any()) } returns flowOf(*documents.toTypedArray())
 
         val result = adapter.search(
             query = "machine learning",
@@ -47,7 +47,7 @@ class LegacySearchAdapterTest {
             title = "Test Title",
             doi = "10.1234/test"
         )
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf(scholarlyDoc)
+        every { searchClient.search(any(), any(), any()) } returns flowOf(scholarlyDoc)
 
         val result = adapter.search(
             query = "test",
@@ -63,7 +63,7 @@ class LegacySearchAdapterTest {
 
     @Test
     fun `search handles year filter from legacy format`() = runTest {
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf()
+        every { searchClient.search(any(), any(), any()) } returns flowOf()
 
         adapter.search(
             query = "test",
@@ -80,7 +80,7 @@ class LegacySearchAdapterTest {
 
     @Test
     fun `search handles open access filter`() = runTest {
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf()
+        every { searchClient.search(any(), any(), any()) } returns flowOf()
 
         adapter.search(
             query = "test",
@@ -94,7 +94,7 @@ class LegacySearchAdapterTest {
 
     @Test
     fun `search returns execution time`() = runTest {
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf()
+        every { searchClient.search(any(), any(), any()) } returns flowOf()
 
         val result = adapter.search(
             query = "test",
@@ -108,7 +108,7 @@ class LegacySearchAdapterTest {
 
     @Test
     fun `search handles errors gracefully`() = runTest {
-        every { searchClient.search(any(), any(), any(), any(), any()) } throws RuntimeException("API Error")
+        every { searchClient.search(any(), any(), any()) } throws RuntimeException("API Error")
 
         val result = adapter.search(
             query = "test",
@@ -124,7 +124,7 @@ class LegacySearchAdapterTest {
     @Test
     fun `hasMore is true when results reach limit`() = runTest {
         val documents = (1..10).map { createScholarlyDocument("doc$it") }
-        every { searchClient.search(any(), any(), any(), any(), any()) } returns flowOf(*documents.toTypedArray())
+        every { searchClient.search(any(), any(), any()) } returns flowOf(*documents.toTypedArray())
 
         val result = adapter.search(
             query = "test",

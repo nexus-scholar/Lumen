@@ -79,7 +79,7 @@ class ScholarlyDocumentTest {
             rawSourceData = rawData
         )
 
-        doc.rawSourceData shouldHaveSize 2
+        doc.rawSourceData.size shouldBe 2
         doc.rawSourceData["openalex"]?.get("custom_field")?.toString() shouldBe "\"custom_value\""
         doc.rawSourceData["crossref"]?.get("publisher")?.toString() shouldBe "\"Test Publisher\""
     }

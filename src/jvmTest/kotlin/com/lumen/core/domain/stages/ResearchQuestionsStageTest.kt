@@ -48,7 +48,7 @@ class ResearchQuestionsStageTest {
 
     @Test
     fun `handles LLM unavailable`() = runTest {
-        every { llmService.isAvailable() } returns false
+        coEvery { llmService.isAvailable() } returns false
 
         val result = stage.execute(testPico)
 
@@ -59,7 +59,7 @@ class ResearchQuestionsStageTest {
 
     @Test
     fun `generates valid research questions`() = runTest {
-        every { llmService.isAvailable() } returns true
+        coEvery { llmService.isAvailable() } returns true
         every { llmService.modelName } returns "gpt-4"
 
         val mockResponse = QuestionsResponse(
@@ -96,7 +96,7 @@ class ResearchQuestionsStageTest {
         assertFalse(approval.data.approved)
 
         // Verify artifact saved
-        verify {
+        coVerify {
             artifactStore.save(
                 projectId = any(),
                 artifact = any<ResearchQuestions>(),
@@ -108,7 +108,7 @@ class ResearchQuestionsStageTest {
 
     @Test
     fun `handles LLM generation failure`() = runTest {
-        every { llmService.isAvailable() } returns true
+        coEvery { llmService.isAvailable() } returns true
 
         coEvery {
             llmService.generateStructured<QuestionsResponse>(any(), any(), any())
@@ -119,7 +119,7 @@ class ResearchQuestionsStageTest {
         assertTrue(result is StageResult.Failure)
 
         // Verify error saved
-        verify {
+        coVerify {
             artifactStore.saveError(
                 projectId = any(),
                 stageName = any(),
@@ -131,7 +131,7 @@ class ResearchQuestionsStageTest {
 
     @Test
     fun `validates generated questions`() = runTest {
-        every { llmService.isAvailable() } returns true
+        coEvery { llmService.isAvailable() } returns true
         every { llmService.modelName } returns "gpt-4"
 
         // Generate questions with validation issues

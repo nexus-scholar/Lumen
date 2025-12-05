@@ -14,10 +14,10 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import org.koin.test.KoinTest
-import org.koin.test.inject
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class SearchModuleTest : KoinTest {
+class SearchModuleTest : KoinComponent {
 
     @AfterEach
     fun tearDown() {

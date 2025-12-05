@@ -1,6 +1,8 @@
 package com.lumen.search.fixtures
 
 import com.lumen.search.domain.models.*
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Test search intents for various scenarios.
@@ -97,9 +99,9 @@ object TestDocuments {
         references = listOf("10.1056/NEJMoa1801550", "10.1016/S0140-6736(17)32152-9"),
         citations = listOf("10.1038/s41591-020-0963-6"),
         rawSourceData = mapOf(
-            "openalex" to kotlinx.serialization.json.buildJsonObject {
-                put("id", "https://openalex.org/W2741809807")
-                put("type", "journal-article")
+            "openalex" to buildJsonObject {
+                put("id", JsonPrimitive("https://openalex.org/W2741809807"))
+                put("type", JsonPrimitive("journal-article"))
             }
         ),
         isFullyHydrated = true,
@@ -125,9 +127,9 @@ object TestDocuments {
         references = emptyList(),
         citations = emptyList(),
         rawSourceData = mapOf(
-            "semanticscholar" to kotlinx.serialization.json.buildJsonObject {
-                put("paperId", "abc123def456")
-                put("corpusId", 12345678)
+            "semanticscholar" to buildJsonObject {
+                put("paperId", JsonPrimitive("abc123def456"))
+                put("corpusId", JsonPrimitive(12345678))
             }
         ),
         isFullyHydrated = true,
@@ -170,9 +172,9 @@ object TestDocuments {
         pdfUrl = "https://www.nature.com/articles/s41586-019-1666-5.pdf",
         abstract = null, // Crossref often lacks abstracts
         rawSourceData = mapOf(
-            "crossref" to kotlinx.serialization.json.buildJsonObject {
-                put("DOI", "10.1038/s41586-019-1666-5")
-                put("type", "journal-article")
+            "crossref" to buildJsonObject {
+                put("DOI", JsonPrimitive("10.1038/s41586-019-1666-5"))
+                put("type", JsonPrimitive("journal-article"))
             }
         ),
         isFullyHydrated = false
@@ -192,9 +194,9 @@ object TestDocuments {
         pdfUrl = "https://arxiv.org/pdf/2401.12345.pdf",
         abstract = "We present a novel deep learning approach for medical image analysis...",
         rawSourceData = mapOf(
-            "arxiv" to kotlinx.serialization.json.buildJsonObject {
-                put("id", "2401.12345")
-                put("primary_category", "cs.CV")
+            "arxiv" to buildJsonObject {
+                put("id", JsonPrimitive("2401.12345"))
+                put("primary_category", JsonPrimitive("cs.CV"))
             }
         ),
         isFullyHydrated = true

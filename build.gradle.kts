@@ -113,6 +113,8 @@ kotlin {
                 implementation("io.kotest:kotest-runner-junit5:$kotestVersion")
                 implementation("io.kotest:kotest-assertions-core:$kotestVersion")
                 implementation("io.ktor:ktor-client-mock:$ktorVersion")
+                implementation("io.insert-koin:koin-test:$koinVersion")
+                implementation("io.insert-koin:koin-test-junit5:$koinVersion")
                 implementation("com.h2database:h2:2.2.224")
             }
         }
