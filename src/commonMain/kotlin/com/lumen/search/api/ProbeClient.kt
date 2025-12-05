@@ -81,12 +81,14 @@ class ProbeClient(
 
         val stats = orchestrator.getAggregatedStats(intent)
 
-        // Merge year counts from all providers
+        // Merge year counts from all providers and sort by year
         return stats.providerStats.values
             .flatMap { it.countByYear.entries }
             .groupBy { it.key }
             .mapValues { (_, entries) -> entries.maxOf { it.value } }
-            .toSortedMap()
+            .toList()
+            .sortedBy { it.first }
+            .toMap()
     }
 
     /**
